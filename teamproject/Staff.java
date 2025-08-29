@@ -5,6 +5,8 @@
  */
 package teamproject;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author ZAHI
@@ -12,11 +14,13 @@ package teamproject;
 public class Staff extends Person {
     public String UserName;
     public String password;
+    ArrayList<Customer>customer;
 
     public Staff(String UserName, String password,UserInterface ui ) {
         super(ui);
         this.UserName = UserName;
         this.password = password;
+        customer = new ArrayList<>();
     }
     @Override
     public void login(){
@@ -29,6 +33,7 @@ public class Staff extends Person {
             getUi().showUserMenu();
     }
         else System.out.println("Code running.....");}
+    
     
     
 

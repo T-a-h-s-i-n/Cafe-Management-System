@@ -25,6 +25,8 @@ public class UserInterface extends Application {
     private TextField userField;
     private PasswordField passField;
     private VBox mainButtonBox;
+    private Order uorder;
+    private Customer ucustomer;
 
     @Override
     public void start(Stage primaryStage) {
@@ -90,7 +92,7 @@ public class UserInterface extends Application {
     private Button createButton2(String text) {
         Button button = new Button(text);
         button.setPrefWidth(105);
-        button.setPrefHeight(2);
+        button.setPrefHeight(5);
         button.setPadding(new Insets(5));
         button.setAlignment(Pos.TOP_LEFT);
         button.setBackground(new Background(new BackgroundFill(
@@ -100,19 +102,7 @@ public class UserInterface extends Application {
         )));
         return button;
     }
-    private Button createButton3(String text) {
-        Button button = new Button(text);
-        button.setPrefWidth(105);
-        button.setPrefHeight(2);
-        button.setPadding(new Insets(5));
-        button.setAlignment(Pos.TOP_RIGHT);
-        button.setBackground(new Background(new BackgroundFill(
-                Color.BURLYWOOD,
-                new CornerRadii(2),
-                Insets.EMPTY
-        )));
-        return button;
-    }
+    
     public Button createBackButton() {
         Button backButton = createButton("Back");
 
@@ -159,8 +149,8 @@ public class UserInterface extends Application {
         String username = userField.getText();
         String password = passField.getText();
 
-        Customer customer = new Customer(username, password,this);
-        customer.login();
+        ucustomer = new Customer(username, password,this);
+        ucustomer.login();
         Staff admin = new Staff(username, password,this);
         admin.login();
         Staff staff = new Staff(username,password,this);
@@ -194,16 +184,16 @@ public class UserInterface extends Application {
     
     protected void showUserOrder() {
         Cafe cafe = new Cafe();
-        cafe.setUpMenu();
+        cafe.setUpMenuDrink();
         TextField userInput = new TextField();
         userInput.setPromptText("Type your drink name");
 
         Button checkBtn = createButton2("Check Menu");
+        Button CartBtn = createButton2("Cart");
         Button OrderBtn = createButton2("Order");
-        Button SnacksBtn = createButton3("Snacks");
-        Button PayBtn = createButton3("Payment");
 
         Label resultLabel = new Label();
+        Label resultLabel2 = new Label();
 
         checkBtn.setOnAction(e -> {
             String input = userInput.getText().trim();
@@ -211,16 +201,28 @@ public class UserInterface extends Application {
             if (item != null) {
                 resultLabel.setText("✅ " + item.getName() + " is available for " + item.getPrice() + " BDT.");
             } else {
-                resultLabel.setText("Sorry T-T, we don't have \"" + input + "\" on the menu.");
+                resultLabel.setText("Sorry T-T, we don't have \"" + input + "\"");
             }});
+        CartBtn.setOnAction(e -> {
+            String input2 = userInput.getText().trim();
+            MenuItem oitem = cafe.findItemByName(input2);
+            if (oitem != null) {
+                if (uorder == null) {
+                uorder = new Order();}
+                uorder.addItem(oitem);
+                resultLabel2.setText("Item added.");
+                OrderBtn.setOnAction(e1 -> {
+                    showUserPayment();
+                });
+            } else {
+                resultLabel2.setText("Sorry T-T, we don't have \"" + input2 + "\" available.");
+        }});
         
         root.getChildren().clear();
         VBox inputSection = new VBox(userInput);
-        VBox menu1 = new VBox(5, checkBtn, resultLabel, OrderBtn);
-        VBox menu2 = new VBox(5, SnacksBtn, PayBtn);
-        VBox menu3 = new VBox(5,inputSection, menu1);
-        VBox menucard = new VBox(250, menu3, menu2);
-        menu2.setAlignment(Pos.BOTTOM_RIGHT);
+        VBox menu1 = new VBox(2, checkBtn, resultLabel, CartBtn,resultLabel2,OrderBtn);
+        menu1.setAlignment(Pos.TOP_RIGHT);
+        VBox menucard = new VBox(2,inputSection, menu1);
         root.getChildren().add(menucard);
         
         Image mImage = new Image("file:G://Summer 2025//CSE lab//TeamProject//src//gfx//drinks.png");
@@ -236,7 +238,64 @@ public class UserInterface extends Application {
         root.setBackground(new Background(menuImage));
     }
     
-    
+    protected void showUserPayment() {
+    root.getChildren().clear();
+
+    Label paymentLabel = new Label("Choose your payment method  ");
+    paymentLabel.setTextFill(Color.WHITE);
+
+    Button cardBtn = createButton("Online Payment");
+    Button cashBtn = createButton("Cash On Delivery ");
+    Button backBtn4 = createBackButton();
+    Label statusLabel = new Label();
+    Label statusLabel2 = new Label();
+    statusLabel.setTextFill(Color.WHITE);
+    statusLabel2.setTextFill(Color.WHITE);
+
+    cardBtn.setOnAction(e -> {
+        String method = ((Button) e.getSource()).getText();
+        if (uorder != null && ucustomer != null) {
+            Payment payment = new Payment(uorder, ucustomer, method);
+            boolean success = payment.processPayment();
+            if (success) {
+                statusLabel.setText("Thank you, Your order is on way");
+            } else {
+                statusLabel.setText("Payment failed. Please try again.");
+            }
+        } else {
+            statusLabel.setText("No order or customer info found.");
+        }
+    });
+    cashBtn.setOnAction(e -> {
+        String method = ((Button) e.getSource()).getText();
+        if (uorder != null && ucustomer != null) {
+            Payment payment = new Payment(uorder, ucustomer, method);
+            boolean success = payment.processPayment();
+            if (success) {
+                statusLabel2.setText("Total Bill: "+uorder.calculateTotal()+"BDT");
+            } else {
+                statusLabel2.setText("Process failed. Please try again.");
+            }
+        } else {
+            statusLabel2.setText("No order or customer info found.");
+        }
+    });
+
+
+    VBox paymentBox = new VBox(10, paymentLabel, cashBtn,statusLabel2, cardBtn, statusLabel, backBtn4);
+    paymentBox.setAlignment(Pos.CENTER_RIGHT);
+    root.getChildren().add(paymentBox);
+
+    Image payImage = new Image("file:G://Summer 2025//CSE lab//TeamProject//src//gfx//bg2.jpeg");
+    BackgroundImage bg3 = new BackgroundImage(
+        payImage,
+        BackgroundRepeat.NO_REPEAT,
+        BackgroundRepeat.NO_REPEAT,
+        BackgroundPosition.CENTER,
+        new BackgroundSize(100, 100, true, true, true, true)
+    );
+    root.setBackground(new Background(bg3));
+}
 
     public static void main(String[] args) {
         launch(args);

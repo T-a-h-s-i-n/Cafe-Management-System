@@ -40,9 +40,4 @@ public class Customer extends Person{
     }
     
     
- 
-    public void showInfo(){
-        
-    }
-    
 }
