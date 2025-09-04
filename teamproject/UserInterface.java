@@ -27,6 +27,7 @@ public class UserInterface extends Application {
     private VBox mainButtonBox;
     private Order uorder;
     private Customer ucustomer;
+    private boolean paymentProcessed = false;
 
     @Override
     public void start(Stage primaryStage) {
@@ -44,11 +45,10 @@ public class UserInterface extends Application {
         // Create buttons
         Button userBtn = createButton("User");
         Button adminBtn = createButton("Admin");
-        Button staffBtn = createButton("Staff");
 
         // Layout for buttons
         mainButtonBox = new VBox();//for back button
-        HBox buttonBox = new HBox(85, userBtn, adminBtn, staffBtn);
+        HBox buttonBox = new HBox(85, userBtn, adminBtn);
         buttonBox.setPadding(new Insets(20));
         buttonBox.setAlignment(Pos.CENTER);
         
@@ -58,7 +58,6 @@ public class UserInterface extends Application {
         // Set button actions
         userBtn.setOnAction(e -> showLoginInterface("User"));
         adminBtn.setOnAction(e -> showLoginInterface("Admin"));
-        staffBtn.setOnAction(e -> showLoginInterface("Staff"));
 
         // Background setup
         Image bgImage = new Image("file:/G://Summer 2025//CSE lab//TeamProject//src//gfx//openimage.png");
@@ -110,6 +109,7 @@ public class UserInterface extends Application {
             root.getChildren().clear();
             root.getChildren().add(mainButtonBox);
         });
+        paymentProcessed = false;
 
         return backButton;
     }
@@ -145,16 +145,74 @@ public class UserInterface extends Application {
         root.getChildren().add(loginFormation);
     }
 
-    private void handleLogin(String userType) {
-        String username = userField.getText();
-        String password = passField.getText();
+   private void handleLogin(String userType) {
+    String username = userField.getText().trim();
+    String password = passField.getText().trim();
 
-        ucustomer = new Customer(username, password,this);
-        ucustomer.login();
-        Staff admin = new Staff(username, password,this);
-        admin.login();
-        Staff staff = new Staff(username,password,this);
-        staff.login();
+    switch (userType) {
+        case "User":
+            ucustomer = new Customer(username, password, this);
+            uorder = null;
+            ucustomer.login();
+            break;
+        case "Admin":
+            Admin admin = new Admin(username, password, this);
+            admin.login();
+            break;
+        default:
+            showError("Unknown user type.");
+    }
+}
+    public void showError(String message) {
+        Label errorLabel = new Label(message);
+        errorLabel.setTextFill(Color.WHITE);
+        VBox errorBox = new VBox(10, errorLabel, createBackButton());
+        errorBox.setAlignment(Pos.CENTER);
+        root.getChildren().clear();
+        root.getChildren().add(errorBox);
+    }
+    protected void showAdminFiles(){
+        Button revBtn = createButton("Revenue");
+        Button listBtn = createButton("Customer List");
+        Button logoutBtn = createButton("Logout");
+        Button backBtn2 = createBackButton();
+        VBox showmenu = new VBox(10, revBtn,listBtn, logoutBtn,backBtn2);
+        showmenu.setAlignment(Pos.CENTER_LEFT);
+        StackPane.setAlignment(showmenu, Pos.CENTER);
+        logoutBtn.setOnAction(e -> System.exit(0));
+        revBtn.setOnAction(e -> {
+            int totalRevenue = ucustomer.getTotalRevenue();
+            Label revenueLabel = new Label("Total Revenue: " + totalRevenue + " BDT");
+            revenueLabel.setTextFill(Color.WHITE);
+
+            VBox showLabel = new VBox(10, revenueLabel, createBackButton());
+            showLabel.setAlignment(Pos.CENTER);
+
+            root.getChildren().clear();
+            root.getChildren().add(showLabel);
+
+
+        });
+        listBtn.setOnAction(e -> {
+            String Path = "G://Summer 2025//CSE lab//TeamProject//src//CustomerList//CustomerList.txt";
+            Customer.CustomerListFile(Path);
+            showError("Customer list saved to file.\nCheck: customer_list.txt");
+        });
+
+        root.getChildren().clear();
+        root.getChildren().add(showmenu);
+        Image cImage = new Image("file:G://Summer 2025//CSE lab//TeamProject//src//gfx//bgimage.png");
+        BackgroundImage cfi = new BackgroundImage(
+                cImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(100, 100, true, true, true, true)
+        );
+
+        //new bg set
+        root.setBackground(new Background(cfi));
+        
     }
     protected void showUserMenu(){
         Button menuBtn = createButton("Menu");
@@ -194,6 +252,8 @@ public class UserInterface extends Application {
 
         Label resultLabel = new Label();
         Label resultLabel2 = new Label();
+        resultLabel.setTextFill(Color.WHITE);
+        resultLabel2.setTextFill(Color.WHITE);
 
         checkBtn.setOnAction(e -> {
             String input = userInput.getText().trim();
@@ -246,19 +306,32 @@ public class UserInterface extends Application {
 
     Button cardBtn = createButton("Online Payment");
     Button cashBtn = createButton("Cash On Delivery ");
+    Button logoutBtn2 = createButton("Logout");
     Button backBtn4 = createBackButton();
     Label statusLabel = new Label();
     Label statusLabel2 = new Label();
     statusLabel.setTextFill(Color.WHITE);
     statusLabel2.setTextFill(Color.WHITE);
 
+    logoutBtn2.setOnAction(e->{
+        paymentProcessed = false;
+        System.exit(0);});
+    
     cardBtn.setOnAction(e -> {
+        if (paymentProcessed) {
+            statusLabel.setText("Payment already processed.");
+            return;
+        }
         String method = ((Button) e.getSource()).getText();
         if (uorder != null && ucustomer != null) {
             Payment payment = new Payment(uorder, ucustomer, method);
             boolean success = payment.processPayment();
             if (success) {
-                statusLabel.setText("Thank you, Your order is on way");
+                String Path = "G://Summer 2025//CSE lab//TeamProject//src//CustomerList//CustomerList.txt";
+                Customer.CustomerListFile(Path);
+                paymentProcessed = true;
+                cashBtn.setDisable(true); 
+               statusLabel.setText("Total Bill: "+uorder.calculateTotal()+"BDT"+"\n ✅ Payment Received\n" + "Your order is confirmed.");
             } else {
                 statusLabel.setText("Payment failed. Please try again.");
             }
@@ -267,12 +340,20 @@ public class UserInterface extends Application {
         }
     });
     cashBtn.setOnAction(e -> {
+        if (paymentProcessed) {
+            statusLabel.setText("Payment already processed.");
+            return;
+        }
         String method = ((Button) e.getSource()).getText();
         if (uorder != null && ucustomer != null) {
             Payment payment = new Payment(uorder, ucustomer, method);
             boolean success = payment.processPayment();
             if (success) {
-                statusLabel2.setText("Total Bill: "+uorder.calculateTotal()+"BDT");
+            String Path = "G://Summer 2025//CSE lab//TeamProject//src//CustomerList//CustomerList.txt";
+            Customer.CustomerListFile(Path);
+                paymentProcessed = true;
+                cardBtn.setDisable(true); 
+                statusLabel2.setText("Thank you, Your order is on the way"+"\nTotal Bill: "+uorder.calculateTotal()+"BDT");
             } else {
                 statusLabel2.setText("Process failed. Please try again.");
             }
@@ -282,7 +363,7 @@ public class UserInterface extends Application {
     });
 
 
-    VBox paymentBox = new VBox(10, paymentLabel, cashBtn,statusLabel2, cardBtn, statusLabel, backBtn4);
+    VBox paymentBox = new VBox(10, paymentLabel, cashBtn,statusLabel2, cardBtn, statusLabel, backBtn4,logoutBtn2);
     paymentBox.setAlignment(Pos.CENTER_RIGHT);
     root.getChildren().add(paymentBox);
 

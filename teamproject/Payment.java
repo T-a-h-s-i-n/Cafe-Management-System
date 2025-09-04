@@ -13,28 +13,29 @@ public class Payment {
 
     private Order order;
     private Customer customer;
-    private boolean isPaid;
+    private boolean isordered;
     private String paymentMethod;
 
     public Payment(Order order, Customer customer, String paymentMethod) {
         this.order = order;
         this.customer = customer;
         this.paymentMethod = paymentMethod;
-        this.isPaid = false;
+        this.isordered = false;
     }
 
     public boolean processPayment() {
         double total = order.calculateTotal();
         if (total > 0) {
-            isPaid = true;
+            isordered = true;
+            customer.addPayment(this);
             return true;
         } else {
             return false;
         }
     }
 
-    public boolean isPaid() {
-        return isPaid;
+    public boolean isOrdered() {
+        return isordered;
     }
 
     public String getPaymentMethod() {

@@ -19,8 +19,8 @@ public class Order {
         items.add(item);
     }
 
-    public double calculateTotal() {
-        double total = 0.0;
+    public int calculateTotal() {
+        int total = 0;
         for (MenuItem item : items) {
             total += item.getPrice();
         }
